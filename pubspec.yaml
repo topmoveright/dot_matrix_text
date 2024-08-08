@@ -1,0 +1,35 @@
+name: dot_matrix_text
+description: "A Flutter package to create dot matrix text effects."
+version: 0.0.1
+homepage: https://github.com/topmoveright/dot_matrix_text
+
+environment:
+  sdk: '>=3.4.4 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+
+screenshots:
+  - description: 'Example screenshot'
+    path: screenshots/screenshot1.png
+
+topics:
+  - text
+  - dot matrix
+  - led text
+  - custom text display
+  - text animation
+  - flicker effect
+  - mirrored text
+  - flutter widget
+  - ui components
+  - text effects
+ 
+
+flutter:
