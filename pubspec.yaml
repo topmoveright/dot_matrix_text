@@ -21,15 +21,8 @@ screenshots:
 
 topics:
   - text
-  - dot matrix
-  - led text
-  - custom text display
-  - text animation
-  - flicker effect
-  - mirrored text
-  - flutter widget
-  - ui components
-  - text effects
- 
+  - ui-components
+  - dot-matrix
+  - led-text
 
 flutter:

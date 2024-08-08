@@ -35,6 +35,7 @@ dependencies:
 | mirrorMode    | bool      | false                 | Whether to mirror the text horizontally.      |
 | flickerMode   | bool      | false                   Whether to enable a flickering effect on the LEDs. |
 | invertColors  | bool      | false                 | Whether to invert the colors of the LEDs.     |
+| alignment     | Alignment | Alignment.center      | The alignment of the text.                    |
 
 ### Usage
 
