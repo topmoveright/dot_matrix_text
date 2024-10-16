@@ -85,266 +85,250 @@ class MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // Get screen size for responsive sliders
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height / 2;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dot Matrix Text Example'),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              height: double.infinity,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
+              width: boardWidth,
+              height: boardHeight,
               color: Colors.black,
-              child: Center(
-                child: DotMatrixText(
-                  text: text,
-                  ledSize: ledSize,
-                  ledSpacing: ledSpacing,
-                  blankLedColor: blankLedColor,
-                  textStyle: textStyle,
-                  mirrorMode: mirrorMode,
-                  flickerMode: flickerMode,
-                  invertColors: invertColors,
-                  alignment: alignment,
-                  boardSize: Size(boardWidth, boardHeight),
-                ),
+              child: DotMatrixText(
+                text: text,
+                ledSize: ledSize,
+                ledSpacing: ledSpacing,
+                blankLedColor: blankLedColor,
+                textStyle: textStyle,
+                mirrorMode: mirrorMode,
+                flickerMode: flickerMode,
+                invertColors: invertColors,
+                alignment: alignment,
+                boardSize: Size(boardWidth, boardHeight),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              children: [
-                TextField(
-                  controller: textController,
-                  onChanged: (value) {
-                    setState(() {
-                      text = value;
-                    });
-                  },
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    const Text('LED Size'),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: Slider(
-                        value: ledSize,
-                        min: 1.0,
-                        max: 10.0,
-                        onChanged: (value) {
-                          setState(() {
-                            ledSize = value;
-                          });
-                        },
-                      ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: textController,
+                    onChanged: (value) {
+                      setState(() {
+                        text = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  _buildSlider(
+                    label: 'LED Size',
+                    value: ledSize,
+                    min: 1.0,
+                    max: 10.0,
+                    onChanged: (value) {
+                      setState(() {
+                        ledSize = value;
+                      });
+                    },
+                  ),
+                  _buildSlider(
+                    label: 'LED Spacing',
+                    value: ledSpacing,
+                    min: 1.0,
+                    max: 10.0,
+                    onChanged: (value) {
+                      setState(() {
+                        ledSpacing = value;
+                      });
+                    },
+                  ),
+                  _buildSlider(
+                    label: 'Font Size',
+                    value: textStyle.fontSize ?? 100,
+                    min: 50.0,
+                    max: 200.0,
+                    onChanged: (value) {
+                      setState(() {
+                        textStyle = textStyle.copyWith(fontSize: value);
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  _buildDropdown<Color>(
+                    label: 'LED Color',
+                    value: textStyle.color!,
+                    items: ledColors,
+                    itemBuilder: (color) => Container(
+                      width: 24,
+                      height: 24,
+                      color: color,
                     ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    const Text('LED Spacing'),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: Slider(
-                        value: ledSpacing,
-                        min: 1.0,
-                        max: 10.0,
-                        onChanged: (value) {
-                          setState(() {
-                            ledSpacing = value;
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    const Text('Font Size'),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: Slider(
-                        value: textStyle.fontSize ?? 100,
-                        min: 50.0,
-                        max: 200.0,
-                        onChanged: (value) {
-                          setState(() {
-                            textStyle = textStyle.copyWith(fontSize: value);
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    const Text('LED Color'),
-                    const SizedBox(width: 20),
-                    DropdownButton<Color>(
-                      value: textStyle.color!,
-                      items: ledColors.map((color) {
-                        return DropdownMenuItem<Color>(
-                          value: color,
-                          child: Container(
-                            width: 24,
-                            height: 24,
-                            color: color,
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (Color? value) {
-                        if (value != null) {
-                          setState(() {
-                            textStyle = textStyle.copyWith(color: value);
-                          });
-                        }
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    const Text('Blank LED Color'),
-                    const SizedBox(width: 20),
-                    DropdownButton<Color>(
-                      value: blankLedColor,
-                      items: blankLedColors.map((color) {
-                        return DropdownMenuItem<Color>(
-                          value: color,
-                          child: Container(
-                            width: 24,
-                            height: 24,
-                            color: color,
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (Color? value) {
-                        if (value != null) {
-                          setState(() {
-                            blankLedColor = value;
-                          });
-                        }
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    const Text('Mirror Mode'),
-                    const SizedBox(width: 20),
-                    Switch(
-                      value: mirrorMode,
-                      onChanged: (value) {
+                    onChanged: (value) {
+                      if (value != null) {
                         setState(() {
-                          mirrorMode = value;
+                          textStyle = textStyle.copyWith(color: value);
                         });
-                      },
+                      }
+                    },
+                  ),
+                  _buildDropdown<Color>(
+                    label: 'Blank LED Color',
+                    value: blankLedColor,
+                    items: blankLedColors,
+                    itemBuilder: (color) => Container(
+                      width: 24,
+                      height: 24,
+                      color: color,
                     ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    const Text('Flicker Mode'),
-                    const SizedBox(width: 20),
-                    Switch(
-                      value: flickerMode,
-                      onChanged: (value) {
+                    onChanged: (value) {
+                      if (value != null) {
                         setState(() {
-                          flickerMode = value;
+                          blankLedColor = value;
                         });
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    const Text('Invert Colors'),
-                    const SizedBox(width: 20),
-                    Switch(
-                      value: invertColors,
-                      onChanged: (value) {
+                      }
+                    },
+                  ),
+                  _buildSwitch(
+                    label: 'Mirror Mode',
+                    value: mirrorMode,
+                    onChanged: (value) {
+                      setState(() {
+                        mirrorMode = value;
+                      });
+                    },
+                  ),
+                  _buildSwitch(
+                    label: 'Flicker Mode',
+                    value: flickerMode,
+                    onChanged: (value) {
+                      setState(() {
+                        flickerMode = value;
+                      });
+                    },
+                  ),
+                  _buildSwitch(
+                    label: 'Invert Colors',
+                    value: invertColors,
+                    onChanged: (value) {
+                      setState(() {
+                        invertColors = value;
+                      });
+                    },
+                  ),
+                  _buildDropdown<Alignment>(
+                    label: 'Alignment',
+                    value: alignment,
+                    items: alignments,
+                    itemBuilder: (alignment) =>
+                        Text(alignment.toString().split('.').last),
+                    onChanged: (value) {
+                      if (value != null) {
                         setState(() {
-                          invertColors = value;
+                          alignment = value;
                         });
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    const Text('Alignment'),
-                    const SizedBox(width: 20),
-                    DropdownButton<Alignment>(
-                      value: alignment,
-                      items: alignments.map((alignment) {
-                        return DropdownMenuItem<Alignment>(
-                          value: alignment,
-                          child: Text(alignment.toString().split('.').last),
-                        );
-                      }).toList(),
-                      onChanged: (Alignment? value) {
-                        if (value != null) {
-                          setState(() {
-                            alignment = value;
-                          });
-                        }
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    const Text('Board Width'),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: Slider(
-                        value: boardWidth,
-                        min: 100.0,
-                        max: 500.0,
-                        onChanged: (value) {
-                          setState(() {
-                            boardWidth = value;
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    const Text('Board Height'),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: Slider(
-                        value: boardHeight,
-                        min: 100.0,
-                        max: 500.0,
-                        onChanged: (value) {
-                          setState(() {
-                            boardHeight = value;
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                      }
+                    },
+                  ),
+                  _buildSlider(
+                    label: 'Board Width',
+                    value: boardWidth,
+                    min: 100.0,
+                    max: screenWidth,
+                    onChanged: (value) {
+                      setState(() {
+                        boardWidth = value;
+                      });
+                    },
+                  ),
+                  _buildSlider(
+                    label: 'Board Height',
+                    value: boardHeight,
+                    min: 100.0,
+                    max: screenHeight,
+                    onChanged: (value) {
+                      setState(() {
+                        boardHeight = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildSlider({
+    required String label,
+    required double value,
+    required double min,
+    required double max,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Row(
+      children: [
+        SizedBox(width: 100, child: Text(label)),
+        Expanded(
+          child: Slider(
+            value: value,
+            min: min,
+            max: max,
+            onChanged: onChanged,
+          ),
+        ),
+        SizedBox(
+          width: 40,
+          child: Text(value.toStringAsFixed(0)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSwitch({
+    required String label,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Row(
+      children: [
+        SizedBox(width: 100, child: Text(label)),
+        Switch(
+          value: value,
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDropdown<T>({
+    required String label,
+    required T value,
+    required List<T> items,
+    required Widget Function(T) itemBuilder,
+    required ValueChanged<T?> onChanged,
+  }) {
+    return Row(
+      children: [
+        SizedBox(width: 100, child: Text(label)),
+        DropdownButton<T>(
+          value: value,
+          items: items.map((item) {
+            return DropdownMenuItem<T>(
+              value: item,
+              child: itemBuilder(item),
+            );
+          }).toList(),
+          onChanged: onChanged,
+        ),
+      ],
     );
   }
 }
