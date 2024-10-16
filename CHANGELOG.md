@@ -10,3 +10,11 @@
 - Introduce invert colors mode for LED color inversion.
 - Provide customizable blank LED color.
 - Ensure compatibility with various board sizes or default to auto-calculated sizes based on text dimensions.
+
+## 0.1.0
+
+- Improved performance by creating the Paint object outside of the loop.
+- Eliminated unnecessary computations by using the alpha value instead of computeLuminance().
+- Optimized memory usage and performance by enhancing the way pixel data is accessed.
+- Increased the code's completeness by implementing the mirrorMode feature.
+- Minimized calculations inside the loop to enhance overall performance.
