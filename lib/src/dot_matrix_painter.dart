@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 class DotMatrixPainter extends CustomPainter {
   final TextPainter textPainter;
   final ui.Image textImage;
-  final ByteData imageByteData;
+  final Uint32List pixels;
   final double ledSize;
   final double ledSpacing;
   final Color textColor;
@@ -21,7 +21,7 @@ class DotMatrixPainter extends CustomPainter {
   DotMatrixPainter({
     required this.textPainter,
     required this.textImage,
-    required this.imageByteData,
+    required ByteData imageByteData,
     required this.ledSize,
     required this.ledSpacing,
     required this.textColor,
@@ -33,7 +33,7 @@ class DotMatrixPainter extends CustomPainter {
     required this.flickerState,
     required this.invertColors,
     required this.alignment,
-  });
+  }) : pixels = imageByteData.buffer.asUint32List();
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -55,15 +55,18 @@ class DotMatrixPainter extends CustomPainter {
 
   /// Draws the blank LEDs on the canvas
   void _drawBlankLEDs(Canvas canvas, double dotRadius, double cellSize) {
+    final paint = Paint()
+      ..color = ((flickerMode && flickerState) || invertColors
+          ? textColor
+          : blankLedColor)
+      ..style = PaintingStyle.fill;
+
     for (int y = 0; y < verticalDots; y++) {
+      final double offsetY = y * cellSize + dotRadius;
       for (int x = 0; x < horizontalDots; x++) {
-        final paint = Paint()
-          ..color = ((flickerMode && flickerState) || invertColors
-              ? textColor
-              : blankLedColor)
-          ..style = PaintingStyle.fill;
+        final double offsetX = x * cellSize + dotRadius;
         canvas.drawCircle(
-          Offset(x * cellSize + dotRadius, y * cellSize + dotRadius),
+          Offset(offsetX, offsetY),
           dotRadius,
           paint,
         );
@@ -74,27 +77,35 @@ class DotMatrixPainter extends CustomPainter {
   /// Draws the text LEDs on the canvas
   void _drawTextLEDs(Canvas canvas, double dotRadius, double cellSize,
       double textWidth, double textHeight, double dx, double dy) {
-    for (int y = 0; y < verticalDots; y++) {
-      for (int x = 0; x < horizontalDots; x++) {
-        final boardX = x * cellSize;
-        final boardY = y * cellSize;
+    final paint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = (flickerMode && flickerState) || invertColors
+          ? blankLedColor
+          : textColor;
 
-        final textX = boardX - dx;
-        final textY = boardY - dy;
+    for (int y = 0; y < verticalDots; y++) {
+      final double boardY = y * cellSize;
+      final double offsetY = boardY + dotRadius;
+      for (int x = 0; x < horizontalDots; x++) {
+        final double boardX = x * cellSize;
+        final double offsetX = boardX + dotRadius;
+
+        double textX = boardX - dx;
+        double textY = boardY - dy;
 
         if (_isWithinTextBounds(textX, textY, textWidth, textHeight)) {
-          final pixelOffset = Offset(textX, textY);
-          final pixel =
-              _getPixelColor(imageByteData, pixelOffset, textImage.width);
+          int pixelX = mirrorMode
+              ? (textImage.width - 1 - textX.floor())
+              : textX.floor();
+          int pixelY = textY.floor();
 
-          if (pixel.computeLuminance() > 0) {
-            final paint = Paint()
-              ..style = PaintingStyle.fill
-              ..color = (flickerMode && flickerState) || invertColors
-                  ? blankLedColor
-                  : textColor;
+          int index = pixelY * textImage.width + pixelX;
+
+          final pixel = _getPixelColor(pixels, index);
+
+          if (pixel.alpha > 0) {
             canvas.drawCircle(
-              Offset(boardX + dotRadius, boardY + dotRadius),
+              Offset(offsetX, offsetY),
               dotRadius,
               paint,
             );
@@ -110,14 +121,14 @@ class DotMatrixPainter extends CustomPainter {
     return textX >= 0 && textX < textWidth && textY >= 0 && textY < textHeight;
   }
 
-  /// Helper function to get the color of a pixel from byte data
-  Color _getPixelColor(ByteData byteData, Offset offset, int width) {
-    final pixelOffset = (offset.dy.toInt() * width + offset.dx.toInt()) * 4;
-    if (pixelOffset >= 0 && pixelOffset < byteData.lengthInBytes - 3) {
-      final r = byteData.getUint8(pixelOffset);
-      final g = byteData.getUint8(pixelOffset + 1);
-      final b = byteData.getUint8(pixelOffset + 2);
-      final a = byteData.getUint8(pixelOffset + 3);
+  /// Helper function to get the color of a pixel from pixel data
+  Color _getPixelColor(Uint32List pixels, int index) {
+    if (index >= 0 && index < pixels.length) {
+      int pixelValue = pixels[index];
+      int a = (pixelValue >> 24) & 0xFF;
+      int r = (pixelValue >> 16) & 0xFF;
+      int g = (pixelValue >> 8) & 0xFF;
+      int b = pixelValue & 0xFF;
       return Color.fromARGB(a, r, g, b);
     }
     return Colors.transparent;
