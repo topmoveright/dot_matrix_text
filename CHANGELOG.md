@@ -1,5 +1,25 @@
 # Changelog
 
+
+
+## 0.2.0
+
+- Added customizable flicker speed control with immediate state updates
+- Enhanced painter performance with optimized shouldRepaint checks
+- Improved alignment handling and state management
+- Added proper cleanup for timer resources
+- Optimized widget rebuilds for better performance
+- Enhanced example app with modern Material 3 design
+- Added comprehensive control options in the example app
+
+## 0.1.0
+
+- Improved performance by creating the Paint object outside of the loop.
+- Eliminated unnecessary computations by using the alpha value instead of computeLuminance().
+- Optimized memory usage and performance by enhancing the way pixel data is accessed.
+- Increased the code's completeness by implementing the mirrorMode feature.
+- Minimized calculations inside the loop to enhance overall performance.
+
 ## 0.0.1
 
 - Initial release of `dot_matrix_text` package.
@@ -10,11 +30,3 @@
 - Introduce invert colors mode for LED color inversion.
 - Provide customizable blank LED color.
 - Ensure compatibility with various board sizes or default to auto-calculated sizes based on text dimensions.
-
-## 0.1.0
-
-- Improved performance by creating the Paint object outside of the loop.
-- Eliminated unnecessary computations by using the alpha value instead of computeLuminance().
-- Optimized memory usage and performance by enhancing the way pixel data is accessed.
-- Increased the code's completeness by implementing the mirrorMode feature.
-- Minimized calculations inside the loop to enhance overall performance.

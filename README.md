@@ -2,16 +2,18 @@
 
 A Flutter plugin for creating customizable dot matrix text displays.
 
-<img src="https://github.com/user-attachments/assets/a08b486c-fad1-43e2-9667-7a062dead3f8">
+<img src="https://github.com/user-attachments/assets/28ff0bc6-d7ed-4720-8b7a-bd8bfb1d23e8">
 
 ## Features
 
 - Customizable LED size and spacing
 - Adjustable text style and color
 - **Mirror mode** for reversed text display
-- **Flicker mode** for dynamic LED effects
+- **Flicker mode** with adjustable speed
 - **Invert colors** for different display styles
-- Customizable board size
+- Customizable board size and alignment
+- High-performance rendering
+- Modern Material 3 example app
 
 ## Getting Started
 
@@ -19,23 +21,24 @@ To use this plugin, add `dot_matrix_text` as a dependency in your `pubspec.yaml`
 
 ```yaml
 dependencies:
-  dot_matrix_text: ^0.1.0
+  dot_matrix_text: ^0.2.0
 ```
 
 ### Parameters
 
-| Parameter       | Type        | Default                                                                                                  | Description                                                                             |
-|-----------------|-------------|----------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
-| `text`          | `String`    | Required                                                                                                 | The text to be displayed in dot matrix style.                                           |
-| `ledSize`       | `double`    | `4.0`                                                                                                    | The size of each LED dot.                                                               |
-| `ledSpacing`    | `double`    | `2.0`                                                                                                    | The spacing between each LED dot.                                                       |
-| `blankLedColor` | `Color`     | `Color.fromRGBO(10, 10, 10, 1)`                                                                          | The color of the LEDs that are off (blank).                                             |
-| `boardSize`     | `Size?`     | `null`                                                                                                   | The size of the board displaying the text. If `null`, size is calculated based on text. |
-| `textStyle`     | `TextStyle` | `TextStyle(fontSize: 100.0, fontWeight: FontWeight.bold, color: Colors.red)`                             | The text style for the displayed text.                                                  |
-| `mirrorMode`    | `bool`      | `false`                                                                                                  | Whether to mirror the text horizontally.                                                |
-| `flickerMode`   | `bool`      | `false`                                                                                                  | Whether to enable a flickering effect on the LEDs.                                      |
-| `invertColors`  | `bool`      | `false`                                                                                                  | Whether to invert the colors of the LEDs.                                               |
-| `alignment`     | `Alignment` | `Alignment.center`                                                                                       | The alignment of the text within the board.                                             |
+| Parameter       | Type          | Default                                                                                                  | Description                                                                             |
+|----------------|---------------|----------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| `text`         | `String`      | Required                                                                                                 | The text to be displayed in dot matrix style.                                           |
+| `ledSize`      | `double`      | `4.0`                                                                                                    | The size of each LED dot.                                                               |
+| `ledSpacing`   | `double`      | `2.0`                                                                                                    | The spacing between each LED dot.                                                       |
+| `blankLedColor`| `Color`       | `Color.fromRGBO(10, 10, 10, 1)`                                                                         | The color of the LEDs that are off (blank).                                             |
+| `boardSize`    | `Size?`       | `null`                                                                                                   | The size of the board displaying the text. If `null`, size is calculated based on text. |
+| `textStyle`    | `TextStyle`   | `TextStyle(fontSize: 100.0, fontWeight: FontWeight.bold, color: Colors.red)`                            | The text style for the displayed text.                                                  |
+| `mirrorMode`   | `bool`        | `false`                                                                                                  | Whether to mirror the text horizontally.                                                |
+| `flickerMode`  | `bool`        | `false`                                                                                                  | Whether to enable a flickering effect on the LEDs.                                      |
+| `flickerSpeed` | `Duration`    | `Duration(seconds: 1)`                                                                                   | The speed of the LED flicker effect when flickerMode is enabled.                        |
+| `invertColors` | `bool`        | `false`                                                                                                  | Whether to invert the colors of the LEDs.                                               |
+| `alignment`    | `Alignment`   | `Alignment.center`                                                                                       | The alignment of the text within the board.                                             |
 
 ### Usage
 
@@ -68,6 +71,7 @@ DotMatrixText(
   ),
   mirrorMode: true,
   flickerMode: true,
+  flickerSpeed: Duration(milliseconds: 500),
   invertColors: false,
 );
 ```
@@ -90,9 +94,10 @@ This plugin is optimized for performance, utilizing efficient rendering techniqu
 
 ### Features Highlight
 
-- **Mirror Mode**: Implemented to allow text to be displayed in reverse, enhancing visual effects.
-- **Flicker Mode Enhancements**: Improved flicker mode provides dynamic LED effects without significant performance impact.
-- **Efficient Pixel Data Handling**: Optimized pixel data access improves memory usage and performance.
+- **Enhanced Performance**: Optimized rendering with cached paint objects and efficient pixel data handling
+- **Customizable Flicker**: Adjustable flicker speed for more dynamic LED effects
+- **Improved Alignment**: Better text positioning with responsive alignment controls
+- **Modern Example App**: Material 3 design with comprehensive customization options
 
 For more detailed examples and advanced usage, please refer to the example app in the GitHub repository.
 
