@@ -1,6 +1,6 @@
 name: dot_matrix_text
-description: "A Flutter plugin for creating customizable dot matrix text displays. This package allows developers to easily implement retro-style LED text effects with adjustable LED size, spacing, colors, and dynamic features such as mirror mode, flicker effects, invertible colors, and customizable board sizes. Enhance your Flutter apps with unique and visually appealing dot matrix text animations."
-version: 0.1.0
+description: "Creating retro-style LED dot matrix displays with customizable size, spacing, colors, and effects."
+version: 0.2.0
 homepage: https://github.com/topmoveright/dot_matrix_text
 
 environment:

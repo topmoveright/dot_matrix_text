@@ -19,6 +19,7 @@ class DotMatrixText extends StatefulWidget {
     ),
     this.mirrorMode = false,
     this.flickerMode = false,
+    this.flickerSpeed = const Duration(seconds: 1),
     this.invertColors = false,
     this.alignment = Alignment.center,
   });
@@ -47,6 +48,9 @@ class DotMatrixText extends StatefulWidget {
   /// Whether to enable a flickering effect on the LEDs.
   final bool flickerMode;
 
+  /// The speed of the flicker effect. Default is 1 second.
+  final Duration flickerSpeed;
+
   /// Whether to invert the colors of the LEDs.
   final bool invertColors;
 
@@ -65,6 +69,8 @@ class DotMatrixTextState extends State<DotMatrixText> {
   late int verticalDots;
   late int horizontalDots;
   Timer? flickerTimer;
+  Size? _cachedBoardSize;
+  late Size _textLayoutSize;
 
   @override
   void initState() {
@@ -79,62 +85,87 @@ class DotMatrixTextState extends State<DotMatrixText> {
   @override
   void didUpdateWidget(DotMatrixText oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _updatePainterAndImage(oldWidget);
+    if (_shouldUpdatePainterAndImage(oldWidget)) {
+      _initializeTextPainter();
+      _createTextImage();
+    }
     _updateFlickerTimer(oldWidget);
+  }
+
+  bool _shouldUpdatePainterAndImage(DotMatrixText oldWidget) {
+    return widget.text != oldWidget.text ||
+        widget.textStyle != oldWidget.textStyle ||
+        widget.ledSize != oldWidget.ledSize ||
+        widget.ledSpacing != oldWidget.ledSpacing ||
+        widget.mirrorMode != oldWidget.mirrorMode ||
+        widget.boardSize != oldWidget.boardSize;
   }
 
   /// Initializes the TextPainter and calculates the number of vertical and horizontal dots.
   void _initializeTextPainter() {
+    final text = widget.text.isEmpty ? ' ' : widget.text;
     textPainter = TextPainter(
-      text: TextSpan(
-          text: widget.text.isEmpty ? ' ' : widget.text,
-          style: widget.textStyle),
+      text: TextSpan(text: text, style: widget.textStyle),
       textDirection: TextDirection.ltr,
-    );
-    textPainter.layout();
+    )..layout();
 
-    final textLayoutSize = widget.boardSize ?? textPainter.size;
-    verticalDots = (textLayoutSize.height - widget.ledSpacing) ~/
-        (widget.ledSize + widget.ledSpacing);
-    horizontalDots = (textLayoutSize.width - widget.ledSpacing) ~/
-        (widget.ledSize + widget.ledSpacing);
+    _textLayoutSize = widget.boardSize ?? textPainter.size;
+    _cachedBoardSize = _textLayoutSize;
+
+    final cellSize = widget.ledSize + widget.ledSpacing;
+    verticalDots = (_textLayoutSize.height - widget.ledSpacing) ~/ cellSize;
+    horizontalDots = (_textLayoutSize.width - widget.ledSpacing) ~/ cellSize;
   }
 
   /// Creates an image from the text and converts it to ByteData.
   Future<void> _createTextImage() async {
+    final boardHeight = _calculateBoardHeight();
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
 
-    final boardHeight =
-        (widget.ledSize + widget.ledSpacing) * verticalDots - widget.ledSpacing;
-    final yOffset = (boardHeight - textPainter.height) / 2;
+    // Calculate the width based on mirror mode
+    final imageWidth = textPainter.width.ceil();
 
     if (widget.mirrorMode) {
+      canvas.translate(imageWidth.toDouble(), 0);
       canvas.scale(-1, 1);
-      canvas.translate(-textPainter.width, 0);
     }
 
-    textPainter.paint(canvas, Offset(0, yOffset));
+    textPainter.paint(
+        canvas, Offset(0, (boardHeight - textPainter.height) / 2));
+
     final picture = recorder.endRecording();
-    final image = await picture.toImage(
-      textPainter.width.ceil(),
+    final newImage = await picture.toImage(
+      imageWidth,
       boardHeight.ceil(),
     );
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+    final newByteData =
+        await newImage.toByteData(format: ui.ImageByteFormat.rawRgba);
 
-    setState(() {
-      textImage = image;
-      imageByteData = byteData;
-    });
+    if (mounted) {
+      setState(() {
+        // Dispose of old image before assigning new one
+        textImage?.dispose();
+        textImage = newImage;
+        imageByteData = newByteData;
+      });
+    } else {
+      newImage.dispose();
+    }
+  }
+
+  double _calculateBoardHeight() {
+    return (widget.ledSize + widget.ledSpacing) * verticalDots -
+        widget.ledSpacing;
   }
 
   /// Starts a timer to toggle the flicker state.
   void _startFlickerTimer() {
     flickerTimer?.cancel();
-    flickerTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() {
-        flickerState = !flickerState;
-      });
+    flickerTimer = Timer.periodic(widget.flickerSpeed, (_) {
+      if (mounted) {
+        setState(() => flickerState = !flickerState);
+      }
     });
   }
 
@@ -144,26 +175,15 @@ class DotMatrixTextState extends State<DotMatrixText> {
     flickerTimer = null;
   }
 
-  /// Updates the TextPainter and text image if relevant properties have changed.
-  void _updatePainterAndImage(DotMatrixText oldWidget) {
-    if (widget.text != oldWidget.text ||
-        widget.textStyle != oldWidget.textStyle ||
-        widget.ledSize != oldWidget.ledSize ||
-        widget.ledSpacing != oldWidget.ledSpacing ||
-        widget.mirrorMode != oldWidget.mirrorMode ||
-        widget.boardSize != oldWidget.boardSize) {
-      _initializeTextPainter();
-      _createTextImage();
-    }
-  }
-
-  /// Updates the flicker timer if the flicker mode has changed.
+  /// Updates the flicker timer if the flicker mode or speed has changed.
   void _updateFlickerTimer(DotMatrixText oldWidget) {
-    if (widget.flickerMode != oldWidget.flickerMode) {
+    if (widget.flickerMode != oldWidget.flickerMode ||
+        (widget.flickerMode && widget.flickerSpeed != oldWidget.flickerSpeed)) {
       if (widget.flickerMode) {
         _startFlickerTimer();
       } else {
         _stopFlickerTimer();
+        setState(() => flickerState = false);
       }
     }
   }
@@ -171,31 +191,35 @@ class DotMatrixTextState extends State<DotMatrixText> {
   @override
   void dispose() {
     _stopFlickerTimer();
+    textPainter.dispose();
+    textImage?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (textImage == null || imageByteData == null) {
+      return SizedBox.fromSize(size: _cachedBoardSize);
+    }
+
     return CustomPaint(
-      painter: textImage != null && imageByteData != null
-          ? DotMatrixPainter(
-              textPainter: textPainter,
-              textImage: textImage!,
-              imageByteData: imageByteData!,
-              ledSize: widget.ledSize,
-              ledSpacing: widget.ledSpacing,
-              textColor: widget.textStyle.color ?? Colors.red,
-              blankLedColor: widget.blankLedColor,
-              verticalDots: verticalDots,
-              horizontalDots: horizontalDots,
-              mirrorMode: widget.mirrorMode,
-              flickerMode: widget.flickerMode,
-              flickerState: flickerState,
-              invertColors: widget.invertColors,
-              alignment: widget.alignment,
-            )
-          : null,
-      size: widget.boardSize ?? textPainter.size,
+      painter: DotMatrixPainter(
+        textPainter: textPainter,
+        textImage: textImage!,
+        imageByteData: imageByteData!,
+        ledSize: widget.ledSize,
+        ledSpacing: widget.ledSpacing,
+        textColor: widget.textStyle.color ?? Colors.red,
+        blankLedColor: widget.blankLedColor,
+        verticalDots: verticalDots,
+        horizontalDots: horizontalDots,
+        mirrorMode: widget.mirrorMode,
+        flickerMode: widget.flickerMode,
+        flickerState: flickerState,
+        invertColors: widget.invertColors,
+        alignment: widget.alignment,
+      ),
+      size: _cachedBoardSize!,
     );
   }
 }

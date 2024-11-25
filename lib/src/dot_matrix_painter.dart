@@ -18,6 +18,12 @@ class DotMatrixPainter extends CustomPainter {
   final bool invertColors;
   final Alignment alignment;
 
+  // Cached values for paint objects
+  late final Paint _blankPaint;
+  late final Paint _textPaint;
+  late final double _dotRadius;
+  late final double _cellSize;
+
   DotMatrixPainter({
     required this.textPainter,
     required this.textImage,
@@ -33,81 +39,80 @@ class DotMatrixPainter extends CustomPainter {
     required this.flickerState,
     required this.invertColors,
     required this.alignment,
-  }) : pixels = imageByteData.buffer.asUint32List();
+  }) : pixels = imageByteData.buffer.asUint32List() {
+    _dotRadius = ledSize / 2;
+    _cellSize = ledSize + ledSpacing;
+    _blankPaint = Paint()..style = PaintingStyle.fill;
+    _textPaint = Paint()..style = PaintingStyle.fill;
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
-    final dotRadius = ledSize / 2;
-    final cellSize = ledSize + ledSpacing;
     final textWidth = textImage.width.toDouble();
     final textHeight = textImage.height.toDouble();
 
-    // Calculate the offset based on alignment
+    // Calculate the offset based on alignment once
     final dx = ((size.width - textPainter.width) / 2) * (1 + alignment.x);
     final dy = ((size.height - textPainter.height) / 2) * alignment.y;
 
+    // Update paint colors based on current state
+    _blankPaint.color = (flickerMode && flickerState) || invertColors
+        ? textColor
+        : blankLedColor;
+    _textPaint.color = (flickerMode && flickerState) || invertColors
+        ? blankLedColor
+        : textColor;
+
     // Draw blank LEDs
-    _drawBlankLEDs(canvas, dotRadius, cellSize);
+    _drawBlankLEDs(canvas);
 
     // Draw text LEDs
-    _drawTextLEDs(canvas, dotRadius, cellSize, textWidth, textHeight, dx, dy);
+    _drawTextLEDs(canvas, textWidth, textHeight, dx, dy);
   }
 
   /// Draws the blank LEDs on the canvas
-  void _drawBlankLEDs(Canvas canvas, double dotRadius, double cellSize) {
-    final paint = Paint()
-      ..color = ((flickerMode && flickerState) || invertColors
-          ? textColor
-          : blankLedColor)
-      ..style = PaintingStyle.fill;
-
+  void _drawBlankLEDs(Canvas canvas) {
     for (int y = 0; y < verticalDots; y++) {
-      final double offsetY = y * cellSize + dotRadius;
+      final double offsetY = y * _cellSize + _dotRadius;
       for (int x = 0; x < horizontalDots; x++) {
-        final double offsetX = x * cellSize + dotRadius;
         canvas.drawCircle(
-          Offset(offsetX, offsetY),
-          dotRadius,
-          paint,
+          Offset(x * _cellSize + _dotRadius, offsetY),
+          _dotRadius,
+          _blankPaint,
         );
       }
     }
   }
 
   /// Draws the text LEDs on the canvas
-  void _drawTextLEDs(Canvas canvas, double dotRadius, double cellSize,
-      double textWidth, double textHeight, double dx, double dy) {
-    final paint = Paint()
-      ..style = PaintingStyle.fill
-      ..color = (flickerMode && flickerState) || invertColors
-          ? blankLedColor
-          : textColor;
+  void _drawTextLEDs(Canvas canvas, double textWidth, double textHeight,
+      double dx, double dy) {
+    final int imageWidth = textImage.width;
+    final Rect textBounds = Rect.fromLTWH(0, 0, textWidth, textHeight);
 
     for (int y = 0; y < verticalDots; y++) {
-      final double boardY = y * cellSize;
-      final double offsetY = boardY + dotRadius;
+      final double boardY = y * _cellSize;
+      final double offsetY = boardY + _dotRadius;
+      final double textY = boardY - dy;
+
+      if (textY < -_cellSize || textY >= textHeight + _cellSize) continue;
+
       for (int x = 0; x < horizontalDots; x++) {
-        final double boardX = x * cellSize;
-        final double offsetX = boardX + dotRadius;
+        final double boardX = x * _cellSize;
+        final double textX = boardX - dx;
 
-        double textX = boardX - dx;
-        double textY = boardY - dy;
+        if (textX < -_cellSize || textX >= textWidth + _cellSize) continue;
 
-        if (_isWithinTextBounds(textX, textY, textWidth, textHeight)) {
-          int pixelX = mirrorMode
-              ? (textImage.width - 1 - textX.floor())
-              : textX.floor();
-          int pixelY = textY.floor();
+        if (textBounds.contains(Offset(textX, textY))) {
+          final int pixelX = textX.floor();
+          final int pixelY = textY.floor();
+          final int index = pixelY * imageWidth + pixelX;
 
-          int index = pixelY * textImage.width + pixelX;
-
-          final pixel = _getPixelColor(pixels, index);
-
-          if (pixel.alpha > 0) {
+          if (_hasPixelAlpha(index)) {
             canvas.drawCircle(
-              Offset(offsetX, offsetY),
-              dotRadius,
-              paint,
+              Offset(boardX + _dotRadius, offsetY),
+              _dotRadius,
+              _textPaint,
             );
           }
         }
@@ -115,28 +120,20 @@ class DotMatrixPainter extends CustomPainter {
     }
   }
 
-  /// Checks if the coordinates are within the bounds of the text image
-  bool _isWithinTextBounds(
-      double textX, double textY, double textWidth, double textHeight) {
-    return textX >= 0 && textX < textWidth && textY >= 0 && textY < textHeight;
-  }
-
-  /// Helper function to get the color of a pixel from pixel data
-  Color _getPixelColor(Uint32List pixels, int index) {
-    if (index >= 0 && index < pixels.length) {
-      int pixelValue = pixels[index];
-      int a = (pixelValue >> 24) & 0xFF;
-      int r = (pixelValue >> 16) & 0xFF;
-      int g = (pixelValue >> 8) & 0xFF;
-      int b = pixelValue & 0xFF;
-      return Color.fromARGB(a, r, g, b);
-    }
-    return Colors.transparent;
+  /// Efficient check for pixel alpha value
+  bool _hasPixelAlpha(int index) {
+    return index >= 0 &&
+        index < pixels.length &&
+        (pixels[index] >> 24) & 0xFF > 0;
   }
 
   @override
   bool shouldRepaint(covariant DotMatrixPainter oldDelegate) {
     return oldDelegate.textImage != textImage ||
-        oldDelegate.flickerState != flickerState;
+        oldDelegate.flickerState != flickerState ||
+        oldDelegate.textColor != textColor ||
+        oldDelegate.blankLedColor != blankLedColor ||
+        oldDelegate.invertColors != invertColors ||
+        oldDelegate.alignment != alignment;
   }
 }
