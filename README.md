@@ -76,6 +76,37 @@ DotMatrixText(
 );
 ```
 
+### Effects & Layout Options
+
+- `mirrorMode`: Mirrors the rendered text horizontally for reversed signage.
+- `flickerMode`: Toggles LEDs on an interval to simulate classic display shimmer.
+- `flickerSpeed`: Controls the duration between flicker toggles for finer animation tuning.
+- `invertColors`: Swaps blank and active LED colors to invert the appearance.
+- `alignment`: Positions the text within the board using any `Alignment` value.
+- `boardSize`: Forces a fixed board dimension to keep layout consistent across texts.
+
+### Advanced Example
+
+```dart
+DotMatrixText(
+  text: 'Cascade Rocks',
+  ledSize: 6.0,
+  ledSpacing: 2.5,
+  blankLedColor: const Color.fromRGBO(25, 25, 25, 1),
+  textStyle: const TextStyle(
+    fontSize: 96,
+    fontWeight: FontWeight.w700,
+    color: Colors.cyan,
+  ),
+  mirrorMode: false,
+  flickerMode: true,
+  flickerSpeed: const Duration(milliseconds: 350),
+  invertColors: false,
+  alignment: Alignment.centerRight,
+  boardSize: const Size(480, 160),
+);
+```
+
 ### Setting a Custom Board Size
 
 By default, the board size is calculated based on the text. You can set a custom size:
@@ -90,7 +121,7 @@ DotMatrixText(
 
 ## Additional Information
 
-This plugin is optimized for performance, utilizing efficient rendering techniques to display dot matrix text with minimal overhead. It is built using Flutter Hooks for efficient state management.
+This plugin is optimized for performance, utilizing efficient rendering techniques to display dot matrix text with minimal overhead. Internally it combines a `StatefulWidget` container with a specialized `CustomPainter` driven by cached image masks and `ValueNotifier` state updates.
 
 ### Features Highlight
 
@@ -100,6 +131,15 @@ This plugin is optimized for performance, utilizing efficient rendering techniqu
 - **Modern Example App**: Material 3 design with comprehensive customization options
 
 For more detailed examples and advanced usage, please refer to the example app in the GitHub repository.
+
+## Running the Example App
+
+1. Ensure you have Flutter installed and set up according to the [official documentation](https://docs.flutter.dev/get-started/install).
+2. Navigate to the `example/` directory.
+3. Run `flutter pub get` to install dependencies.
+4. Launch the demo with `flutter run` on your preferred device or emulator.
+
+The Material 3 demo allows you to tweak every property interactively, visualize flicker effects, and experiment with board sizing in real time.
 
 ## Issues and Feedback
 
