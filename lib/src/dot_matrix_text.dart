@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:dot_matrix_text/src/dot_matrix_painter.dart';
 import 'package:flutter/material.dart';
@@ -63,7 +64,7 @@ class DotMatrixText extends StatefulWidget {
 
 class DotMatrixTextState extends State<DotMatrixText> {
   ui.Image? textImage;
-  ByteData? imageByteData;
+  Uint8List? alphaMask;
   bool flickerState = false;
   late TextPainter textPainter;
   late int verticalDots;
@@ -77,6 +78,7 @@ class DotMatrixTextState extends State<DotMatrixText> {
     super.initState();
     _initializeTextPainter();
     _createTextImage();
+    flickerState = widget.flickerMode;
     if (widget.flickerMode) {
       _startFlickerTimer();
     }
@@ -109,12 +111,25 @@ class DotMatrixTextState extends State<DotMatrixText> {
       textDirection: TextDirection.ltr,
     )..layout();
 
-    _textLayoutSize = widget.boardSize ?? textPainter.size;
+    final providedSize = widget.boardSize ?? textPainter.size;
+    final rawCellSize = widget.ledSize + widget.ledSpacing;
+    final cellSize = rawCellSize > 0
+        ? rawCellSize
+        : (widget.ledSize > 0 ? widget.ledSize : 1.0);
+
+    final safeWidth = math.max(cellSize, providedSize.width);
+    final safeHeight = math.max(cellSize, providedSize.height);
+
+    _textLayoutSize = Size(safeWidth, safeHeight);
     _cachedBoardSize = _textLayoutSize;
 
-    final cellSize = widget.ledSize + widget.ledSpacing;
-    verticalDots = (_textLayoutSize.height - widget.ledSpacing) ~/ cellSize;
-    horizontalDots = (_textLayoutSize.width - widget.ledSpacing) ~/ cellSize;
+    final verticalCount =
+        ((_textLayoutSize.height + widget.ledSpacing) / cellSize).floor();
+    final horizontalCount =
+        ((_textLayoutSize.width + widget.ledSpacing) / cellSize).floor();
+
+    verticalDots = math.max(1, verticalCount);
+    horizontalDots = math.max(1, horizontalCount);
   }
 
   /// Creates an image from the text and converts it to ByteData.
@@ -124,7 +139,7 @@ class DotMatrixTextState extends State<DotMatrixText> {
     final canvas = Canvas(recorder);
 
     // Calculate the width based on mirror mode
-    final imageWidth = textPainter.width.ceil();
+    final imageWidth = math.max(1, textPainter.width.ceil());
 
     if (widget.mirrorMode) {
       canvas.translate(imageWidth.toDouble(), 0);
@@ -142,12 +157,21 @@ class DotMatrixTextState extends State<DotMatrixText> {
     final newByteData =
         await newImage.toByteData(format: ui.ImageByteFormat.rawRgba);
 
+    Uint8List? mask;
+    if (newByteData != null) {
+      final pixels = newByteData.buffer.asUint32List();
+      mask = Uint8List(pixels.length);
+      for (var i = 0; i < pixels.length; i++) {
+        mask[i] = ((pixels[i] >> 24) & 0xFF) > 0 ? 1 : 0;
+      }
+    }
+
     if (mounted) {
       setState(() {
         // Dispose of old image before assigning new one
         textImage?.dispose();
         textImage = newImage;
-        imageByteData = newByteData;
+        alphaMask = mask;
       });
     } else {
       newImage.dispose();
@@ -180,10 +204,13 @@ class DotMatrixTextState extends State<DotMatrixText> {
     if (widget.flickerMode != oldWidget.flickerMode ||
         (widget.flickerMode && widget.flickerSpeed != oldWidget.flickerSpeed)) {
       if (widget.flickerMode) {
+        setState(() => flickerState = true);
         _startFlickerTimer();
       } else {
         _stopFlickerTimer();
-        setState(() => flickerState = false);
+        if (flickerState) {
+          setState(() => flickerState = false);
+        }
       }
     }
   }
@@ -198,7 +225,7 @@ class DotMatrixTextState extends State<DotMatrixText> {
 
   @override
   Widget build(BuildContext context) {
-    if (textImage == null || imageByteData == null) {
+    if (textImage == null || alphaMask == null) {
       return SizedBox.fromSize(size: _cachedBoardSize);
     }
 
@@ -206,7 +233,7 @@ class DotMatrixTextState extends State<DotMatrixText> {
       painter: DotMatrixPainter(
         textPainter: textPainter,
         textImage: textImage!,
-        imageByteData: imageByteData!,
+        alphaMask: alphaMask!,
         ledSize: widget.ledSize,
         ledSpacing: widget.ledSpacing,
         textColor: widget.textStyle.color ?? Colors.red,
