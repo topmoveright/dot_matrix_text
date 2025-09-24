@@ -1,6 +1,8 @@
 # Changelog
 
+## 0.2.1
 
+- optimize dot matrix rendering with alpha mask and pre-calculated paths
 
 ## 0.2.0
 

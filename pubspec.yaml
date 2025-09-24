@@ -1,6 +1,6 @@
 name: dot_matrix_text
 description: "Creating retro-style LED dot matrix displays with customizable size, spacing, colors, and effects."
-version: 0.2.0
+version: 0.2.1
 homepage: https://github.com/topmoveright/dot_matrix_text
 
 environment:
